@@ -15,7 +15,7 @@ module SimpleCsvReader
         hash = row.to_h
         next if hash.compact.empty? # NOTE: blank row
 
-        yield(hash, row_number: row_number)
+        yield(hash.slice(*headers.keys), row_number: row_number)
       end
     end
 

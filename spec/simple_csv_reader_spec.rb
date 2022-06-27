@@ -71,5 +71,21 @@ RSpec.describe SimpleCsvReader do
         expect(results).to eq expected_results
       end
     end
+
+    context 'unnecessary columns exist' do
+      let(:csv_content) do
+        <<~CSV
+          会社名,ユーザ名,dummy
+          テスト株式会社,tester1,dummy
+          テスト株式会社,tester2,dummy
+        CSV
+      end
+      let(:csv_file) { create_csv_file(csv_content) }
+
+      it 'ignored' do
+        csv_reader.read(headers, &proc)
+        expect(results).to eq expected_results
+      end
+    end
   end
 end
