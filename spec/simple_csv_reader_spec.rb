@@ -76,14 +76,36 @@ RSpec.describe SimpleCsvReader do
       let(:csv_content) do
         <<~CSV
           会社名,ユーザ名,dummy
-          テスト株式会社,tester1,dummy
-          テスト株式会社,tester2,dummy
+          テスト株式会社,tester1,dummy1
+          テスト株式会社,tester2,dummy2
         CSV
       end
       let(:csv_file) { create_csv_file(csv_content) }
 
       it 'ignored' do
         csv_reader.read(headers, &proc)
+        expect(results).to eq expected_results
+      end
+    end
+
+    context 'unnecessary columns exist with include_unspecified_headers option' do
+      let(:csv_content) do
+        <<~CSV
+          会社名,ユーザ名,dummy,id
+          テスト株式会社,tester1,dummy1,1
+          テスト株式会社,tester2,dummy2,2
+        CSV
+      end
+      let(:csv_file) { create_csv_file(csv_content) }
+      let(:expected_results) do
+        {
+          2 => { company_name: 'テスト株式会社', "dummy" => 'dummy1', "id" =>  1, user_name: 'tester1' },
+          3 => { company_name: 'テスト株式会社', "dummy" => 'dummy2', "id" => 2, user_name: 'tester2' },
+        }
+      end
+
+      it 'included' do
+        csv_reader.read(headers, include_unspecified_headers: true, &proc)
         expect(results).to eq expected_results
       end
     end
