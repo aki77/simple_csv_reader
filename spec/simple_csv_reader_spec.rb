@@ -109,5 +109,28 @@ RSpec.describe SimpleCsvReader do
         expect(results).to eq expected_results
       end
     end
+
+    context 'zero padding numeric' do
+      let(:csv_content) do
+        <<~CSV
+          会社名,ユーザ名,社員ID
+          テスト株式会社,tester1,0001
+          テスト株式会社,tester2,0002
+        CSV
+      end
+      let(:csv_file) { create_csv_file(csv_content) }
+      let(:headers) { { company_name: '会社名', user_name: 'ユーザ名', id: '社員ID' } }
+      let(:expected_results) do
+        {
+          2 => { company_name: 'テスト株式会社', user_name: 'tester1', id:  '0001' },
+          3 => { company_name: 'テスト株式会社', user_name: 'tester2', id:  '0002' },
+        }
+      end
+
+      it 'included' do
+        csv_reader.read(headers, converters: nil, &proc)
+        expect(results).to eq expected_results
+      end
+    end
   end
 end

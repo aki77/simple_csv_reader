@@ -11,7 +11,7 @@ module SimpleCsvReader
 
     def read(headers, **options, &block)
       # NOTE: The first line is a header
-      csv(headers).each.with_index(2) do |row, row_number|
+      csv(headers, **options.slice(:converters)).each.with_index(2) do |row, row_number|
         hash = row.to_h
         next if hash.compact.empty? # NOTE: blank row
 
@@ -22,9 +22,9 @@ module SimpleCsvReader
 
     private
 
-    def csv(headers)
+    def csv(headers, converters: :numeric)
       header_converter = -> { headers.invert.fetch(_1, _1) }
-      CSV.parse(content, headers: :first_row, header_converters: header_converter, converters: :integer)
+      CSV.parse(content, headers: :first_row, header_converters: header_converter, converters: converters)
     end
 
     def content
