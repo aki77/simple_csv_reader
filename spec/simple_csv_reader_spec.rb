@@ -15,8 +15,7 @@ RSpec.describe SimpleCsvReader do
     create_tmp_file(%w[test .csv], content)
   end
 
-  describe '#read' do
-    let(:csv_reader) { SimpleCsvReader::Reader.new(csv_file.path) }
+  describe '#each' do
     let(:proc) do
       ->(hash, row_number:) { results[row_number] = hash }
     end
@@ -37,42 +36,60 @@ RSpec.describe SimpleCsvReader do
     let(:results) { {} }
 
     context 'Character code is utf-8' do
+      let(:csv_reader) { SimpleCsvReader::Reader.new(csv_file.path, headers) }
       let(:csv_file) { create_csv_file(csv_content) }
 
       it 'block is executed with the hash of the row and the row number as args' do
-        csv_reader.read(headers, &proc)
+        csv_reader.each(&proc)
         expect(results).to eq expected_results
       end
     end
 
+    context 'unless block given' do
+      let(:csv_reader) { SimpleCsvReader::Reader.new(csv_file.path, headers) }
+      let(:csv_file) { create_csv_file(csv_content) }
+
+      it 'return Enumerator' do
+        enum = csv_reader.each
+        expect(enum.to_a).to eq [
+          [{ company_name: 'テスト株式会社', user_name: 'tester1' }, { row_number: 2 }],
+          [{ company_name: 'テスト株式会社', user_name: 'tester2' }, { row_number: 3 }],
+        ]
+      end
+    end
+
     context 'Character code is utf-8 and line break code is \r' do
+      let(:csv_reader) { SimpleCsvReader::Reader.new(csv_file.path, headers) }
       let(:csv_file) { create_csv_file(csv_content.gsub(/\R/, "\r")) }
 
       it 'block is executed with the hash of the row and the row number as args' do
-        csv_reader.read(headers, &proc)
+        csv_reader.each(&proc)
         expect(results).to eq expected_results
       end
     end
 
     context 'Character code is utf-8 with bom' do
+      let(:csv_reader) { SimpleCsvReader::Reader.new(csv_file.path, headers) }
       let(:csv_file) { create_csv_file("\xEF\xBB\xBF" + csv_content) }
 
       it 'block is executed with the hash of the row and the row number as args' do
-        csv_reader.read(headers, &proc)
+        csv_reader.each(&proc)
         expect(results).to eq expected_results
       end
     end
 
     context 'Character code is SJIS' do
+      let(:csv_reader) { SimpleCsvReader::Reader.new(csv_file.path, headers) }
       let(:csv_file) { create_csv_file(csv_content.encode(Encoding::Shift_JIS, Encoding::UTF_8)) }
 
       it 'block is executed with the hash of the row and the row number as args' do
-        csv_reader.read(headers, &proc)
+        csv_reader.each(&proc)
         expect(results).to eq expected_results
       end
     end
 
     context 'unnecessary columns exist' do
+      let(:csv_reader) { SimpleCsvReader::Reader.new(csv_file.path, headers) }
       let(:csv_content) do
         <<~CSV
           会社名,ユーザ名,dummy
@@ -83,7 +100,7 @@ RSpec.describe SimpleCsvReader do
       let(:csv_file) { create_csv_file(csv_content) }
 
       it 'ignored' do
-        csv_reader.read(headers, &proc)
+        csv_reader.each(&proc)
         expect(results).to eq expected_results
       end
     end
@@ -103,9 +120,10 @@ RSpec.describe SimpleCsvReader do
           3 => { company_name: 'テスト株式会社', "dummy" => 'dummy2', "id" => 2, user_name: 'tester2' },
         }
       end
+      let(:csv_reader) { SimpleCsvReader::Reader.new(csv_file.path, headers, include_unspecified_headers: true) }
 
       it 'included' do
-        csv_reader.read(headers, include_unspecified_headers: true, &proc)
+        csv_reader.each(&proc)
         expect(results).to eq expected_results
       end
     end
@@ -127,9 +145,18 @@ RSpec.describe SimpleCsvReader do
         }
       end
 
-      it 'included' do
-        csv_reader.read(headers, converters: nil, &proc)
+      it 'Read as string when converters is nil' do
+        csv_reader = SimpleCsvReader::Reader.new(csv_file.path, headers, converters: nil)
+        csv_reader.each(&proc)
         expect(results).to eq expected_results
+      end
+
+      it 'Read as string when default_converters is nil' do
+        SimpleCsvReader::Reader.default_converters = nil
+        csv_reader = SimpleCsvReader::Reader.new(csv_file.path, headers)
+        csv_reader.each(&proc)
+        expect(results).to eq expected_results
+        SimpleCsvReader::Reader.default_converters = :numeric
       end
     end
   end
