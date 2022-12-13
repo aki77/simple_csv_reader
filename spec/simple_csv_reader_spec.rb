@@ -159,5 +159,36 @@ RSpec.describe SimpleCsvReader do
         SimpleCsvReader::Reader.default_converters = :numeric
       end
     end
+
+    context 'nil value' do
+      let(:csv_content) do
+        <<~CSV
+          会社名,ユーザ名,社員ID
+          テスト株式会社,tester1,
+        CSV
+      end
+      let(:csv_file) { create_csv_file(csv_content) }
+      let(:headers) { { company_name: '会社名', user_name: 'ユーザ名', id: '社員ID' } }
+
+      it 'value is nil when default' do
+        csv_reader = SimpleCsvReader::Reader.new(csv_file.path, headers)
+        result = csv_reader.each.to_a.first
+        expect(result[0][:id]).to eq nil
+      end
+
+      it 'value is empty string when nil_value is empty string' do
+        csv_reader = SimpleCsvReader::Reader.new(csv_file.path, headers, nil_value: '')
+        result = csv_reader.each.to_a.first
+        expect(result[0][:id]).to eq ''
+      end
+
+      it 'value is empty string when default_nil_value is empty string' do
+        SimpleCsvReader::Reader.default_nil_value = ''
+        csv_reader = SimpleCsvReader::Reader.new(csv_file.path, headers)
+        result = csv_reader.each.to_a.first
+        expect(result[0][:id]).to eq ''
+        SimpleCsvReader::Reader.default_nil_value = nil
+      end
+    end
   end
 end

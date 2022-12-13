@@ -32,15 +32,27 @@ module SimpleCsvReader
       @default_converters = converters
     end
 
+    def self.default_nil_value
+      instance_variable_defined?(:@default_nil_value) ? @default_nil_value : nil
+    end
+
+    def self.default_nil_value=(value)
+      @default_nil_value = value
+    end
+
     private
 
     def csv
       header_converter = -> { @headers.invert.fetch(_1, _1) }
-      CSV.parse(content, headers: :first_row, header_converters: header_converter, converters: converters)
+      CSV.parse(content, headers: :first_row, header_converters: header_converter, converters: converters, nil_value: nil_value)
     end
 
     def converters
       @options.fetch(:converters) { self.class.default_converters }
+    end
+
+    def nil_value
+      @options.fetch(:nil_value) { self.class.default_nil_value }
     end
 
     def content
